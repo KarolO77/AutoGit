@@ -4,6 +4,7 @@ from tkinter import messagebox
 import tkinter as tk
 
 from os import path
+import git.exc
 from github import Github
 from github import GithubException
 import git
@@ -316,8 +317,6 @@ class Main():
                 except:
                     pass
 
-            self.dir_path = dir_path
-
         except git.exc.InvalidGitRepositoryError:
             print("The directory is not a valid git repository.")
 
@@ -380,9 +379,9 @@ class Main():
             )
         
         except git.exc.InvalidGitRepositoryError:
-            messagebox.showerror("The directory is a valid git repository.")
+            messagebox.showerror(message="The directory is a valid git repository.")
         except git.exc.GitCommandError as e:
-            messagebox.showerror(f"Error occurred when: {e}")
+            messagebox.showerror(message=f"Error occurred when: {e}")
     
     # Create new Github repository
     def create_repo_menu(self):
@@ -549,33 +548,45 @@ class Main():
             anchor="center"
         )
 
-    def create_repository(self):
+    def create_repository(self):  
+        try:
+            # Get Github User
+            #github_token = self.token_entry.get()
+            #github_username = self.username_entry.get()
 
-        # Get Github User
-        #github_token = self.token_entry.get()
-        #github_username = self.username_entry.get()
+            repo_name = self.repo_name_entry.get()
+            repo_description = self.repo_description_entry.get()
+            status = self.private_status.get()
+        
+            # initialize in git
+            repo = git.Repo.init(self.destination_repo)
 
-        repo_name = self.repo_name_entry.get()
-        repo_description = self.repo_description_entry.get()
-        status = self.private_status.get()
-     
+            # create in Github
+            g = Github(github_token)
+            user = g.get_user()
+            user.create_repo(
+                repo_name,
+                allow_rebase_merge=True,
+                auto_init=False,
+                description=repo_description,
+                has_issues=True,
+                has_projects=False,
+                has_wiki=False,
+                private=status,
+            )
 
-        # initialize in local environment
-        r = git.Repo.init(self.dir_path)
+            url = f"https://github.com/KarolO77/{repo_name}.git"
+            repo.git.commit(m="Initial commit")
+            repo.git.branch('-M', 'main')
+            repo.create_remote("origin", url)
+            origin = repo.remote(name="origin")
+            origin.push()
 
-        # create in Github
-        g = Github(github_token)
-        user = g.get_user()
-        user.create_repo(
-            repo_name,
-            allow_rebase_merge=True,
-            auto_init=False,
-            description=repo_description,
-            has_issues=True,
-            has_projects=False,
-            has_wiki=False,
-            private=status,
-        )
+        except git.exc.GitCommandError as e:
+            messagebox.showerror(message=f"Error occurred when: {e}")
+        except GithubException as e:
+            messagebox.showerror(message=f"Error occurred when: {e}")
+
 
     # run
     def run(self):
