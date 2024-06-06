@@ -80,27 +80,13 @@ class Main():
             self.button["relief"] = "raised"
             self.button2["relief"] = "sunken"
 
-    # Select directories/files to push
+    # Select directory/files to push
     def push_repo_menu(self):
-        # "Your Repository" Button
-        self.dest_repo_button = tk.Button(
-            self.display,
-            text="Click to select destination repository",
-            width=60,
-            height=2,
-            command=lambda: self.select_dir(0)
-        )
-        self.dest_repo_button.place(
-            relx=0.6,
-            rely=0.26,
-            anchor="center"
-        )
-
         # "To push"
         info = tk.Label(
             self.display,
             text="To push:",
-            width=20,
+            width=18,
             height=2,
             borderwidth=0,
             background="green"
@@ -111,18 +97,34 @@ class Main():
             anchor="center"
         )
 
+        # "Your Repository" Button
+        self.dest_repo_button = tk.Button(
+            self.display,
+            text="Click to select destination repository",
+            width=60,
+            height=2,
+            command=lambda: self.select_dir(0)
+        )
+        self.dest_repo_button.place(
+            relx=0.55,
+            rely=0.26,
+            anchor="center"
+        )
+
         # Push Whole Directory
+        self.push_option = tk.BooleanVar()
         directory_option = tk.Radiobutton(
             self.display, 
             width=8,
             height=1,
-            value="dir",
+            value=False, # 0
+            variable=self.push_option,
             text="Directory",
             command=self.push_directory_option
         )
         directory_option.place(
             relx=0.13,
-            rely=0.36,
+            rely=0.38,
             anchor="center"
         )
 
@@ -131,13 +133,14 @@ class Main():
             self.display, 
             width=8,
             height=1,
-            value="file",
+            value=True, # 1
+            variable=self.push_option,
             text="Files",
             command=self.push_files_option
         )
         file_option.place(
             relx=0.13,
-            rely=0.46,
+            rely=0.48,
             anchor="center"
         )
 
@@ -197,7 +200,6 @@ class Main():
             anchor="center"
         )
 
-
         # Push Button
         push_button = tk.Button(
             self.display,
@@ -237,13 +239,13 @@ class Main():
         self.select_dir_button = tk.Button(
             self.display,
             text="ADD+",
-            width=10,
+            width=6,
             height=2,
             command=lambda: self.select_dir(1)
         )
         self.select_dir_button.place(
-            relx=0.3,
-            rely=0.41,
+            relx=0.28,
+            rely=0.43,
             anchor="center"
         )
         self.dir_widgets.append(self.select_dir_button)
@@ -252,12 +254,12 @@ class Main():
         self.selected_dir_label = tk.Label(
             self.display,
             text="Directory: ",
-            width=60,
+            width=50,
             height=2
         )
         self.selected_dir_label.place(
-            relx=0.68,
-            rely=0.41,
+            relx=0.6,
+            rely=0.43,
             anchor="center"
         )
         self.dir_widgets.append(self.selected_dir_label)
@@ -271,13 +273,13 @@ class Main():
         self.add_file_button = tk.Button(
             self.display,
             text="ADD+",
-            width=10,
+            width=6,
             height=2,
             command=self.select_file
         )
-        self.add_file_button.place(            
-            relx=0.3,
-            rely=0.41,
+        self.add_file_button.place(
+            relx=0.28,
+            rely=0.43,
             anchor="center"
         )
 
@@ -285,12 +287,12 @@ class Main():
         self.added_files_label = tk.Label(
             self.display,
             text="Files: ",
-            width=60,
+            width=50,
             height=2
         )
         self.added_files_label.place(            
-            relx=0.68,
-            rely=0.41,
+            relx=0.6,
+            rely=0.43,
             anchor="center"
         )
         
@@ -395,7 +397,7 @@ class Main():
             command=lambda: self.select_dir(0)
         )
         self.dest_repo_button.place(
-            relx=0.6,
+            relx=0.55,
             rely=0.26,
             anchor="center"
         )
@@ -403,7 +405,7 @@ class Main():
         info = tk.Label(
             self.display,
             text="Repository place:",
-            width=20,
+            width=18,
             height=2,
             borderwidth=0,
             background="green"
@@ -494,7 +496,7 @@ class Main():
         repo_status = tk.Label(
             self.display,
             text="Status:",
-            width=20,
+            width=18,
             height=2,
             borderwidth=0,
             background="green"
@@ -505,7 +507,7 @@ class Main():
             anchor="center"
         )
 
-        self.repo_status_pub = tk.Radiobutton(
+        repo_status_pub = tk.Radiobutton(
             self.display,
             width=8,
             height=1,
@@ -513,7 +515,7 @@ class Main():
             variable=self.private_status,
             text="Public"
         )
-        self.repo_status_pub.place(
+        repo_status_pub.place(
             relx=0.4,
             rely=0.74,
             anchor="center"
@@ -586,7 +588,6 @@ class Main():
             messagebox.showerror(message=f"Error occurred when: {e}")
         except GithubException as e:
             messagebox.showerror(message=f"Error occurred when: {e}")
-
 
     # run
     def run(self):
