@@ -10,6 +10,7 @@ from github import GithubException
 import git
 
 from credentials import github_token
+
 #statics
 green = "#154529"
 
@@ -30,7 +31,7 @@ class Main():
         self.selected_files = []
         self.selected_dirs = []
     
-    # repository buttons
+    # Repository Buttons
     def repo_buttons(self):
         
         self.button = tk.Button(
@@ -64,7 +65,12 @@ class Main():
         )
 
     def repo_buttons_clicked(self, bttn):
-        # upload widgets
+        # Clear out
+        self.destination_repo = None
+        self.selected_files.clear()
+        self.selected_dirs.clear()
+        self.commit_message = ""
+
         for widget in self.display.winfo_children():
             if widget != self.button and widget != self.button2:
                 widget.place_forget()
@@ -210,11 +216,26 @@ class Main():
             command=self.push_all
         )
         push_button.place(
-            relx=0.4,
+            relx=0.35,
             rely=0.85,
             anchor="center"
         )
 
+        # Undo Last Add Button
+        undo_add_button = tk.Button(
+            self.display,
+            text="Undo Last Add",
+            width=12,
+            height=2,
+            borderwidth=0,
+            command=lambda: print("undo add")
+        )
+        undo_add_button.place(
+            relx=0.5,
+            rely=0.85,
+            anchor="center"
+        )
+        
         # Reset Git Button
         reset_git_button = tk.Button(
             self.display,
@@ -222,10 +243,10 @@ class Main():
             width=10,
             height=2,
             borderwidth=0,
-            command=lambda: print("Reset Git")
+            command=self.git_reset
         )
         reset_git_button.place(
-            relx=0.6,
+            relx=0.65,
             rely=0.85,
             anchor="center"
         )
@@ -296,17 +317,18 @@ class Main():
             anchor="center"
         )
         
-    def save_commit_message(self):
-        self.commit_message = self.commit_entry.get()
-
     # Select ___ funcs
     def select_dir(self, type=None):
         try:
             dir_path = askdirectory(title='Select directory')
             if dir_path == "":
-                messagebox.showwarning(message="You must select some directory")
+                messagebox.showerror(message="No directory has been selected")
                 return
-
+            elif type and (self.destination_repo not in dir_path):
+                messagebox.showerror(message="Directory not found in repository")
+                return
+            
+            # type: 0 - repository, 1 - selected to push
             if type:
                 self.selected_dirs.append(dir_path)
                 self.selected_dir_label["text"] += dir_path
@@ -326,7 +348,10 @@ class Main():
         try:
             file = askopenfilename(title='Add file')
             if file == "":
-                messagebox.showwarning(message="You must select some file")
+                messagebox.showwarning(message="No file has been selected")
+                return
+            elif self.destination_repo not in file:
+                messagebox.showerror(message="File not found in repository")
                 return
 
             file = path.basename(file)
@@ -336,6 +361,13 @@ class Main():
         except git.exc.InvalidGitRepositoryError:
             print("The directory is not a valid git repository.")
     
+    def git_reset(self):
+        self.selected_files.clear()
+        self.selected_dirs.clear()
+
+    def save_commit_message(self):
+        self.commit_message = self.commit_entry.get()
+
     def get_last_commit(self, dir_path):
         try:
             g = Github(github_token)
@@ -385,7 +417,7 @@ class Main():
         except git.exc.GitCommandError as e:
             messagebox.showerror(message=f"Error occurred when: {e}")
     
-    # Create new Github repository
+    # Create Empty Github repository
     def create_repo_menu(self):
 
         # "Your Repository"
