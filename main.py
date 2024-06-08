@@ -2,6 +2,7 @@
 from tkinter.filedialog import askdirectory, askopenfilename
 from tkinter import messagebox
 import tkinter as tk
+from tkinter import ttk
 
 from os import path
 import git.exc
@@ -14,13 +15,13 @@ from credentials import github_token
 #statics
 green = "#154529"
 
-class Main():
+class App():
     def __init__(self):
         # Main Window
         self.display = tk.Tk()
         self.display.title("GitManager")
         self.display.configure(background=green)
-        self.display.geometry(f"{700}x{400}")
+        self.display.geometry(f"{700}x{500}")
 
         # Widgets lists
         self.dir_widgets = []
@@ -30,7 +31,11 @@ class Main():
         self.destination_repo = None
         self.selected_files = []
         self.selected_dirs = []
-    
+
+        # Menus
+        self.menu_create = None
+        self.menu_push = None
+
     # Repository Buttons
     def repo_buttons(self):
         
@@ -69,25 +74,39 @@ class Main():
         self.destination_repo = None
         self.selected_files.clear()
         self.selected_dirs.clear()
-        self.commit_message = ""
-
-        for widget in self.display.winfo_children():
-            if widget != self.button and widget != self.button2:
-                widget.place_forget()
+        #self.commit_message = ""
 
         # newRepo clicked
         if self.button["relief"] == "raised" and not bttn:
-            self.create_repo_menu()
+            self.menu_create = MenuCreate(self.display)
+            # clear other widget
             self.button["relief"] = "sunken"
             self.button2["relief"] = "raised"
-        # existingRepo clicked
         elif self.button2["relief"] == "raised" and bttn:
-            self.push_repo_menu()
+            self.menu_push = MenuPush(self.display)
+            # clear other widget
             self.button["relief"] = "raised"
             self.button2["relief"] = "sunken"
+    
+    # run
+    def run(self):
+        self.repo_buttons()
+        self.display.mainloop()
 
-    # Select directory/files to push
-    def push_repo_menu(self):
+class MenuPush():
+    def __init__(self, display):
+        self.display = display
+
+        # data
+        # Widgets lists
+        self.dir_widgets = []
+        self.fil_widgets = []
+
+        # Selected things to push
+        self.destination_repo = None
+        self.selected_files = []
+        self.selected_dirs = []
+
         # "To push"
         info = tk.Label(
             self.display,
@@ -417,8 +436,10 @@ class Main():
         except git.exc.GitCommandError as e:
             messagebox.showerror(message=f"Error occurred when: {e}")
     
-    # Create Empty Github repository
-    def create_repo_menu(self):
+
+class MenuCreate():
+    def __init__(self, display):
+        self.display = display
 
         # "Your Repository"
         self.dest_repo_button = tk.Button(
@@ -621,13 +642,8 @@ class Main():
         except GithubException as e:
             messagebox.showerror(message=f"Error occurred when: {e}")
 
-    # run
-    def run(self):
-        self.repo_buttons()
-        self.display.mainloop()
 
-
-# Run the application
+# Run the program
 if __name__ == "__main__":
-    main = Main()
+    main = App()
     main.run()
