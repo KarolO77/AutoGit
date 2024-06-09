@@ -23,22 +23,11 @@ class App():
         self.display.configure(background=green)
         self.display.geometry(f"{700}x{500}")
 
-        # Widgets lists
-        self.dir_widgets = []
-        self.fil_widgets = []
-
-        # Selected things to push
-        self.destination_repo = None
-        self.selected_files = []
-        self.selected_dirs = []
-
         # Menus
         self.menu_create = None
         self.menu_push = None
 
-    # Repository Buttons
-    def repo_buttons(self):
-        
+        # Buttons
         self.button = tk.Button(
             self.display,
             text="CreateNewRepo",
@@ -70,27 +59,39 @@ class App():
         )
 
     def repo_buttons_clicked(self, bttn):
-        # Clear out
-        self.destination_repo = None
-        self.selected_files.clear()
-        self.selected_dirs.clear()
-        #self.commit_message = ""
 
-        # newRepo clicked
         if self.button["relief"] == "raised" and not bttn:
             self.menu_create = MenuCreate(self.display)
-            # clear other widget
+            self.clear_menu_widgets(self.menu_push)
             self.button["relief"] = "sunken"
             self.button2["relief"] = "raised"
+
         elif self.button2["relief"] == "raised" and bttn:
             self.menu_push = MenuPush(self.display)
-            # clear other widget
+            self.clear_menu_widgets(self.menu_create)
             self.button["relief"] = "raised"
             self.button2["relief"] = "sunken"
     
-    # run
+    """ def reset_menu_data(self, menu):
+        if menu and menu == self.menu_push:
+            menu.destination_repo = None
+            menu.selected_files.clear()
+            menu.selected_dirs.clear()
+            menu.commit_message = ""
+        elif menu and menu == self.menu_create:
+            menu.destination_repo = None """
+
+    def clear_menu_widgets(self, menu):
+        if menu == None:
+            return
+
+        for widget in menu.__dict__:
+            try:
+                getattr(menu,widget).place_forget()
+            except AttributeError:
+                pass
+        
     def run(self):
-        self.repo_buttons()
         self.display.mainloop()
 
 class MenuPush():
@@ -108,7 +109,7 @@ class MenuPush():
         self.selected_dirs = []
 
         # "To push"
-        info = tk.Label(
+        self.info = tk.Label(
             self.display,
             text="To push:",
             width=18,
@@ -116,7 +117,7 @@ class MenuPush():
             borderwidth=0,
             background="green"
             )
-        info.place(
+        self.info.place(
             relx=0.13,
             rely=0.26,
             anchor="center"
@@ -138,7 +139,7 @@ class MenuPush():
 
         # Push Whole Directory
         self.push_option = tk.BooleanVar()
-        directory_option = tk.Radiobutton(
+        self.directory_option = tk.Radiobutton(
             self.display, 
             width=8,
             height=1,
@@ -147,14 +148,14 @@ class MenuPush():
             text="Directory",
             command=self.push_directory_option
         )
-        directory_option.place(
+        self.directory_option.place(
             relx=0.13,
             rely=0.38,
             anchor="center"
         )
 
         # Push Some Files
-        file_option = tk.Radiobutton(
+        self.file_option = tk.Radiobutton(
             self.display, 
             width=8,
             height=1,
@@ -163,14 +164,14 @@ class MenuPush():
             text="Files",
             command=self.push_files_option
         )
-        file_option.place(
+        self.file_option.place(
             relx=0.13,
             rely=0.48,
             anchor="center"
         )
 
         # Commit Label
-        commit_label = tk.Label(
+        self.commit_label = tk.Label(
             self.display,
             text="Commit -m:",
             width=18,
@@ -178,7 +179,7 @@ class MenuPush():
             borderwidth=0,
             background="green"
         )
-        commit_label.place(
+        self.commit_label.place(
             relx=0.13,
             rely=0.6,
             anchor="center"
@@ -196,7 +197,7 @@ class MenuPush():
         )
 
         # Commit Add Message
-        commit_add_button = tk.Button(
+        self.commit_add_button = tk.Button(
             self.display,
             text="+",
             width=5,
@@ -204,7 +205,7 @@ class MenuPush():
             borderwidth=0,
             command=self.save_commit_message
         )
-        commit_add_button.place(
+        self.commit_add_button.place(
             relx=0.8,
             rely=0.6,
             anchor="center"
@@ -226,7 +227,7 @@ class MenuPush():
         )
 
         # Push Button
-        push_button = tk.Button(
+        self.push_button = tk.Button(
             self.display,
             text="Push",
             width=10,
@@ -234,14 +235,14 @@ class MenuPush():
             borderwidth=0,
             command=self.push_all
         )
-        push_button.place(
+        self.push_button.place(
             relx=0.35,
             rely=0.85,
             anchor="center"
         )
 
         # Undo Last Add Button
-        undo_add_button = tk.Button(
+        self.undo_add_button = tk.Button(
             self.display,
             text="Undo Last Add",
             width=12,
@@ -249,14 +250,14 @@ class MenuPush():
             borderwidth=0,
             command=lambda: print("undo add")
         )
-        undo_add_button.place(
+        self.undo_add_button.place(
             relx=0.5,
             rely=0.85,
             anchor="center"
         )
         
         # Reset Git Button
-        reset_git_button = tk.Button(
+        self.reset_git_button = tk.Button(
             self.display,
             text="Reset Git",
             width=10,
@@ -264,7 +265,7 @@ class MenuPush():
             borderwidth=0,
             command=self.git_reset
         )
-        reset_git_button.place(
+        self.reset_git_button.place(
             relx=0.65,
             rely=0.85,
             anchor="center"
@@ -336,7 +337,7 @@ class MenuPush():
             anchor="center"
         )
         
-    # Select ___ funcs
+    # funcs
     def select_dir(self, type=None):
         try:
             dir_path = askdirectory(title='Select directory')
@@ -455,7 +456,7 @@ class MenuCreate():
             anchor="center"
         )
 
-        info = tk.Label(
+        self.info = tk.Label(
             self.display,
             text="Repository place:",
             width=18,
@@ -463,14 +464,14 @@ class MenuCreate():
             borderwidth=0,
             background="green"
             )
-        info.place(
+        self.info.place(
             relx=0.13,
             rely=0.26,
             anchor="center"
         )
 
         # Token
-        token_label = tk.Label(
+        self.token_label = tk.Label(
             self.display,
             text="Github Token:",
             width=18,
@@ -478,7 +479,7 @@ class MenuCreate():
             borderwidth=0,
             background="green"
         )
-        token_label.place(
+        self.token_label.place(
             relx=0.13,
             rely=0.38,
             anchor="center"
@@ -495,7 +496,7 @@ class MenuCreate():
         )
       
         # Name
-        repo_name = tk.Label(
+        self.repo_name = tk.Label(
             self.display,
             text="Repo name",
             width=18,
@@ -503,7 +504,7 @@ class MenuCreate():
             borderwidth=0,
             background="green"
         )
-        repo_name.place(
+        self.repo_name.place(
             relx=0.13,
             rely=0.5,
             anchor="center"
@@ -520,7 +521,7 @@ class MenuCreate():
         )
 
         # Description
-        repo_description = tk.Label(
+        self.repo_description = tk.Label(
             self.display,
             text="Description:",
             width=18,
@@ -528,7 +529,7 @@ class MenuCreate():
             borderwidth=0,
             background="green"
         )
-        repo_description.place(
+        self.repo_description.place(
             relx=0.13,
             rely=0.62,
             anchor="center"
@@ -546,7 +547,7 @@ class MenuCreate():
 
         # Status
         self.private_status = tk.BooleanVar()
-        repo_status = tk.Label(
+        self.repo_status = tk.Label(
             self.display,
             text="Status:",
             width=18,
@@ -554,13 +555,13 @@ class MenuCreate():
             borderwidth=0,
             background="green"
         )
-        repo_status.place(
+        self.repo_status.place(
             relx=0.13,
             rely=0.74,
             anchor="center"
         )
 
-        repo_status_pub = tk.Radiobutton(
+        self.repo_status_pub = tk.Radiobutton(
             self.display,
             width=8,
             height=1,
@@ -568,7 +569,7 @@ class MenuCreate():
             variable=self.private_status,
             text="Public"
         )
-        repo_status_pub.place(
+        self.repo_status_pub.place(
             relx=0.4,
             rely=0.74,
             anchor="center"
@@ -589,7 +590,7 @@ class MenuCreate():
         )
 
         # "Create" Button
-        create_repo_button = tk.Button(
+        self.create_repo_button = tk.Button(
             self.display,
             text="Create",
             width=30,
@@ -597,7 +598,7 @@ class MenuCreate():
             borderwidth=0,
             command=self.create_repository
         )
-        create_repo_button.place(
+        self.create_repo_button.place(
             relx=0.5,
             rely=0.88,
             anchor="center"
