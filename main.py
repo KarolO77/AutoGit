@@ -98,18 +98,13 @@ class MenuPush():
     def __init__(self, display):
         self.display = display
 
-        # data
-        # Widgets lists
-        self.dir_widgets = []
-        self.fil_widgets = []
-
         # Selected things to push
-        self.destination_repo = None
+        self.repo_destination = None
         self.selected_files = []
         self.selected_dirs = []
 
         # "To push"
-        self.info = tk.Label(
+        self.info_lbl = tk.Label(
             self.display,
             text="To push:",
             width=18,
@@ -117,27 +112,27 @@ class MenuPush():
             borderwidth=0,
             background="green"
             )
-        self.info.place(
+        self.info_lbl.place(
             relx=0.13,
             rely=0.26,
             anchor="center"
         )
 
         # "Your Repository" Button
-        self.dest_repo_button = tk.Button(
+        self.dest_repo_bttn = tk.Button(
             self.display,
             text="Click to select destination repository",
             width=60,
             height=2,
             command=lambda: self.select_dir(0)
         )
-        self.dest_repo_button.place(
+        self.dest_repo_bttn.place(
             relx=0.55,
             rely=0.26,
             anchor="center"
         )
 
-        # Push Whole Directory
+        # Options to push
         self.push_option = tk.BooleanVar()
         self.directory_option = tk.Radiobutton(
             self.display, 
@@ -146,7 +141,7 @@ class MenuPush():
             value=False, # 0
             variable=self.push_option,
             text="Directory",
-            command=self.push_directory_option
+            command=lambda: self.set_push_option("directory")
         )
         self.directory_option.place(
             relx=0.13,
@@ -154,7 +149,6 @@ class MenuPush():
             anchor="center"
         )
 
-        # Push Some Files
         self.file_option = tk.Radiobutton(
             self.display, 
             width=8,
@@ -162,11 +156,37 @@ class MenuPush():
             value=True, # 1
             variable=self.push_option,
             text="Files",
-            command=self.push_files_option
+            command=lambda: self.set_push_option("file")
         )
         self.file_option.place(
             relx=0.13,
             rely=0.48,
+            anchor="center"
+        )
+
+        # Add to push
+        self.select_pushed_bttn = tk.Button(
+            self.display,
+            text="ADD+",
+            width=6,
+            height=2,
+            command=lambda: self.select_dir(1)
+        )
+        self.select_pushed_bttn.place(
+            relx=0.28,
+            rely=0.43,
+            anchor="center"
+        )
+
+        self.select_pushed_lbl = tk.Label(
+            self.display,
+            text="Directory: ",
+            width=50,
+            height=2
+        )
+        self.select_pushed_lbl.place(
+            relx=0.6,
+            rely=0.43,
             anchor="center"
         )
 
@@ -185,7 +205,6 @@ class MenuPush():
             anchor="center"
         )
 
-        # Commit Message Entry
         self.commit_entry = tk.Entry(
             self.display,
             width=55
@@ -196,23 +215,8 @@ class MenuPush():
             anchor="center"
         )
 
-        # Commit Add Message
-        self.commit_add_button = tk.Button(
-            self.display,
-            text="+",
-            width=5,
-            height=2,
-            borderwidth=0,
-            command=self.save_commit_message
-        )
-        self.commit_add_button.place(
-            relx=0.8,
-            rely=0.6,
-            anchor="center"
-        )
-
         # Last Commit
-        self.last_commit_label = tk.Label(
+        self.last_commit_lbl = tk.Label(
             self.display,
             text="Last Commit: ",
             width=50,
@@ -220,14 +224,14 @@ class MenuPush():
             borderwidth=0,
             background=green
         )
-        self.last_commit_label.place(
+        self.last_commit_lbl.place(
             relx=0.5,
             rely=0.65,
             anchor="center"
         )
 
         # Push Button
-        self.push_button = tk.Button(
+        self.push_all_bttn = tk.Button(
             self.display,
             text="Push",
             width=10,
@@ -235,14 +239,14 @@ class MenuPush():
             borderwidth=0,
             command=self.push_all
         )
-        self.push_button.place(
+        self.push_all_bttn.place(
             relx=0.35,
             rely=0.85,
             anchor="center"
         )
 
         # Undo Last Add Button
-        self.undo_add_button = tk.Button(
+        self.undo_added_bttn = tk.Button(
             self.display,
             text="Undo Last Add",
             width=12,
@@ -250,143 +254,80 @@ class MenuPush():
             borderwidth=0,
             command=lambda: print("undo add")
         )
-        self.undo_add_button.place(
+        self.undo_added_bttn.place(
             relx=0.5,
             rely=0.85,
             anchor="center"
         )
         
-        # Reset Git Button
-        self.reset_git_button = tk.Button(
+        # Reset Added Button
+        self.reset_added_bttn = tk.Button(
             self.display,
-            text="Reset Git",
+            text="Reset added",
             width=10,
             height=2,
             borderwidth=0,
-            command=self.git_reset
+            command=self.remove_all_added
         )
-        self.reset_git_button.place(
+        self.reset_added_bttn.place(
             relx=0.65,
             rely=0.85,
             anchor="center"
         )
 
-    def push_directory_option(self):
-        # hide "push_files_option" widgets
-        for widget in self.fil_widgets:
-            widget.place_forget()
+    def set_push_option(self, option):
+        if option == "directory":
+            self.selected_dirs.clear()
+            self.select_pushed_lbl["text"] = "Directory: "
+            self.select_pushed_bttn["command"] = lambda: self.select_dir(1)
+        elif option == "file":
+            self.selected_files.clear()
+            self.select_pushed_lbl["text"] = "Files: "
+            self.select_pushed_bttn["command"] = self.select_file
 
-        # "ADD+" directory button
-        self.select_dir_button = tk.Button(
-            self.display,
-            text="ADD+",
-            width=6,
-            height=2,
-            command=lambda: self.select_dir(1)
-        )
-        self.select_dir_button.place(
-            relx=0.28,
-            rely=0.43,
-            anchor="center"
-        )
-        self.dir_widgets.append(self.select_dir_button)
-
-        # show selected directory
-        self.selected_dir_label = tk.Label(
-            self.display,
-            text="Directory: ",
-            width=50,
-            height=2
-        )
-        self.selected_dir_label.place(
-            relx=0.6,
-            rely=0.43,
-            anchor="center"
-        )
-        self.dir_widgets.append(self.selected_dir_label)
-
-    def push_files_option(self):
-        # hide "push_directory_option" widgets
-        for widget in self.dir_widgets:
-            widget.place_forget()
-
-        # ADD+ file button
-        self.add_file_button = tk.Button(
-            self.display,
-            text="ADD+",
-            width=6,
-            height=2,
-            command=self.select_file
-        )
-        self.add_file_button.place(
-            relx=0.28,
-            rely=0.43,
-            anchor="center"
-        )
-
-        # added files info
-        self.added_files_label = tk.Label(
-            self.display,
-            text="Files: ",
-            width=50,
-            height=2
-        )
-        self.added_files_label.place(            
-            relx=0.6,
-            rely=0.43,
-            anchor="center"
-        )
-        
-    # funcs
     def select_dir(self, type=None):
         try:
             dir_path = askdirectory(title='Select directory')
             if dir_path == "":
                 messagebox.showerror(message="No directory has been selected")
                 return
-            elif type and (self.destination_repo not in dir_path):
+            elif type and (self.repo_destination not in dir_path):
                 messagebox.showerror(message="Directory not found in repository")
                 return
             
             # type: 0 - repository, 1 - selected to push
             if type:
                 self.selected_dirs.append(dir_path)
-                self.selected_dir_label["text"] += dir_path
+                self.select_pushed_lbl["text"] += dir_path
             if not type:
-                self.destination_repo = dir_path
-                self.dest_repo_button["text"] = f"Current Repo: {dir_path}"
+                self.repo_destination = dir_path
+                self.dest_repo_bttn["text"] = f"Current Repo: {dir_path}"
                 try:
                     last_commit = self.get_last_commit(dir_path)
-                    self.last_commit_label["text"] = f"Last Commit: {last_commit}"
+                    self.last_commit_lbl["text"] = f"Last Commit: {last_commit}"
                 except:
                     pass
 
         except git.exc.InvalidGitRepositoryError:
-            print("The directory is not a valid git repository.")
+            messagebox.showerror(message="The directory is not a valid git repository.")
 
     def select_file(self):
-        try:
-            file = askopenfilename(title='Add file')
-            if file == "":
-                messagebox.showwarning(message="No file has been selected")
-                return
-            elif self.destination_repo not in file:
-                messagebox.showerror(message="File not found in repository")
-                return
+        file = askopenfilename(title='Add file')
+        if file == "":
+            messagebox.showwarning(message="No file has been selected")
+            return
+        elif self.repo_destination not in file:
+            messagebox.showerror(message="File not found in repository")
+            return
 
-            file = path.basename(file)
-            self.selected_files.append(file)
-            self.added_files_label["text"] += f"{file}, "
-        
-        except git.exc.InvalidGitRepositoryError:
-            print("The directory is not a valid git repository.")
-    
-    def git_reset(self):
+        file = path.basename(file)
+        self.selected_files.append(file)
+        self.select_pushed_lbl["text"] += f"{file}, "
+
+    def remove_all_added(self):
         self.selected_files.clear()
         self.selected_dirs.clear()
-
-    def save_commit_message(self):
-        self.commit_message = self.commit_entry.get()
+        # add+ clear
 
     def get_last_commit(self, dir_path):
         try:
@@ -402,17 +343,18 @@ class MenuPush():
     def push_all(self):
         try:
             # Set Destination Repository
-            repo = git.Repo(self.destination_repo)
+            repo = git.Repo(self.repo_destination)
 
-            # Add Everything
-            for file in self.selected_files:
+            # Add files/directories
+            for file in set(self.selected_files):
                 repo.git.add(file)
 
-            for folder in self.selected_dirs:
+            for folder in set(self.selected_dirs):
                 repo.git.add(folder)
 
             # Commit message
-            repo.git.commit(m=self.commit_message)
+            commit = self.commit_entry.get()
+            repo.git.commit(m=commit)
 
             # Push all to User's Github
             origin = repo.remote(name='origin')
@@ -437,7 +379,6 @@ class MenuPush():
         except git.exc.GitCommandError as e:
             messagebox.showerror(message=f"Error occurred when: {e}")
     
-
 class MenuCreate():
     def __init__(self, display):
         self.display = display
