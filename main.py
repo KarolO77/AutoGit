@@ -90,7 +90,7 @@ class App():
                 getattr(menu,widget).place_forget()
             except AttributeError:
                 pass
-        
+    
     def run(self):
         self.display.mainloop()
 
@@ -100,8 +100,7 @@ class MenuPush():
 
         # Selected things to push
         self.repo_destination = None
-        self.selected_files = []
-        self.selected_dirs = []
+        self.selected_things = set()
 
         # "To push"
         self.info_lbl = tk.Label(
@@ -124,7 +123,7 @@ class MenuPush():
             text="Click to select destination repository",
             width=60,
             height=2,
-            command=lambda: self.select_dir(0)
+            command=self.select_repository
         )
         self.dest_repo_bttn.place(
             relx=0.55,
@@ -132,35 +131,60 @@ class MenuPush():
             anchor="center"
         )
 
-        # Options to push
-        self.push_option = tk.BooleanVar()
-        self.directory_option = tk.Radiobutton(
-            self.display, 
-            width=8,
-            height=1,
-            value=False, # 0
-            variable=self.push_option,
-            text="Directory",
-            command=lambda: self.set_push_option("directory")
+        # Token
+        self.token_label = tk.Label(
+            self.display,
+            text="Github Token:",
+            width=18,
+            height=2,
+            borderwidth=0,
+            background="green"
         )
-        self.directory_option.place(
+        self.token_label.place(
             relx=0.13,
             rely=0.38,
             anchor="center"
         )
 
-        self.file_option = tk.Radiobutton(
+        self.token_entry = tk.Entry(
+            self.display,
+            width=65
+        )
+        self.token_entry.place(
+            relx=0.52,
+            rely=0.38,
+            anchor="center"
+        )
+
+        # Options to push
+        self.push_option_var = tk.BooleanVar()
+        self.directory_option_bttn = tk.Radiobutton(
             self.display, 
-            width=8,
+            width=12,
+            height=1,
+            value=False, # 0
+            variable=self.push_option_var,
+            text="Directory",
+            command=lambda: self.set_push_option("directory")
+        )
+        self.directory_option_bttn.place(
+            relx=0.13,
+            rely=0.49,
+            anchor="center"
+        )
+
+        self.file_option_bttn = tk.Radiobutton(
+            self.display, 
+            width=12,
             height=1,
             value=True, # 1
-            variable=self.push_option,
+            variable=self.push_option_var,
             text="Files",
             command=lambda: self.set_push_option("file")
         )
-        self.file_option.place(
+        self.file_option_bttn.place(
             relx=0.13,
-            rely=0.48,
+            rely=0.57,
             anchor="center"
         )
 
@@ -170,11 +194,11 @@ class MenuPush():
             text="ADD+",
             width=6,
             height=2,
-            command=lambda: self.select_dir(1)
+            command=self.select_directory
         )
         self.select_pushed_bttn.place(
             relx=0.28,
-            rely=0.43,
+            rely=0.53,
             anchor="center"
         )
 
@@ -182,11 +206,11 @@ class MenuPush():
             self.display,
             text="Directory: ",
             width=50,
-            height=2
+            height=3
         )
         self.select_pushed_lbl.place(
             relx=0.6,
-            rely=0.43,
+            rely=0.53,
             anchor="center"
         )
 
@@ -201,17 +225,17 @@ class MenuPush():
         )
         self.commit_label.place(
             relx=0.13,
-            rely=0.6,
+            rely=0.68,
             anchor="center"
         )
 
         self.commit_entry = tk.Entry(
             self.display,
-            width=55
+            width=65
         )
         self.commit_entry.place(
-            relx=0.5,
-            rely=0.6,
+            relx=0.52,
+            rely=0.68,
             anchor="center"
         )
 
@@ -226,7 +250,7 @@ class MenuPush():
         )
         self.last_commit_lbl.place(
             relx=0.5,
-            rely=0.65,
+            rely=0.72,
             anchor="center"
         )
 
@@ -245,14 +269,14 @@ class MenuPush():
             anchor="center"
         )
 
-        # Undo Last Add Button
+        # Remove Last Add Button
         self.undo_added_bttn = tk.Button(
             self.display,
-            text="Undo Last Add",
+            text="Rem Last Add",
             width=12,
             height=2,
             borderwidth=0,
-            command=lambda: print("undo add")
+            command=self.remove_last_added
         )
         self.undo_added_bttn.place(
             relx=0.5,
@@ -275,59 +299,81 @@ class MenuPush():
             anchor="center"
         )
 
-    def set_push_option(self, option):
-        if option == "directory":
-            self.selected_dirs.clear()
-            self.select_pushed_lbl["text"] = "Directory: "
-            self.select_pushed_bttn["command"] = lambda: self.select_dir(1)
-        elif option == "file":
-            self.selected_files.clear()
-            self.select_pushed_lbl["text"] = "Files: "
-            self.select_pushed_bttn["command"] = self.select_file
-
-    def select_dir(self, type=None):
+    # select
+    def select_repository(self):
         try:
-            dir_path = askdirectory(title='Select directory')
-            if dir_path == "":
-                messagebox.showerror(message="No directory has been selected")
-                return
-            elif type and (self.repo_destination not in dir_path):
-                messagebox.showerror(message="Directory not found in repository")
-                return
-            
-            # type: 0 - repository, 1 - selected to push
-            if type:
-                self.selected_dirs.append(dir_path)
-                self.select_pushed_lbl["text"] += dir_path
-            if not type:
-                self.repo_destination = dir_path
-                self.dest_repo_bttn["text"] = f"Current Repo: {dir_path}"
-                try:
-                    last_commit = self.get_last_commit(dir_path)
-                    self.last_commit_lbl["text"] = f"Last Commit: {last_commit}"
-                except:
-                    pass
+            repository = askdirectory(title='Select repository')
 
+            self.repo_destination = repository
+            self.dest_repo_bttn["text"] = f"Current Repo: {repository}"
+
+            last_commit = self.get_last_commit(repository)
+            self.last_commit_lbl["text"] = f"Last Commit: {last_commit}"
+
+        # ROZXWIAZAC gdy token
         except git.exc.InvalidGitRepositoryError:
             messagebox.showerror(message="The directory is not a valid git repository.")
 
+    def select_directory(self):
+        if self.repo_destination == None:
+            messagebox.showerror(message="No repository has been selected")
+            return
+        
+        # select directory
+        directory = askdirectory(title='Select directory')
+        if directory == "":
+            messagebox.showerror(message="No directory has been selected")
+            return     
+        elif self.repo_destination not in directory:
+            messagebox.showerror(message="Directory not found in repository")
+            return
+        
+        directory = path.basename(directory)
+        self.selected_things.add(directory)
+        self.select_pushed_lbl["text"] += directory
+
     def select_file(self):
+        if self.repo_destination == None:
+            messagebox.showerror(message="No repository has been selected")
+            return
+        
+        # add file
         file = askopenfilename(title='Add file')
         if file == "":
-            messagebox.showwarning(message="No file has been selected")
+            messagebox.showerror(message="No file has been selected")
             return
         elif self.repo_destination not in file:
             messagebox.showerror(message="File not found in repository")
             return
 
         file = path.basename(file)
-        self.selected_files.append(file)
+        self.selected_things.add(file)
         self.select_pushed_lbl["text"] += f"{file}, "
+    
+    # remove
+    def remove_last_added(self):
+        last_thing = self.select_pushed_lbl["text"].split(",")[-2][1:]
+        d = len(self.select_pushed_lbl["text"]) - len(last_thing) - 3
+        self.select_pushed_lbl["text"] = self.select_pushed_lbl["text"][:d]
+        self.selected_things.remove(last_thing)
 
     def remove_all_added(self):
-        self.selected_files.clear()
-        self.selected_dirs.clear()
-        # add+ clear
+        self.selected_things.clear()
+
+        if self.push_option_var.get():
+            self.set_push_option("file")
+        else:
+            self.set_push_option("directory")
+    
+    # funcs
+    def set_push_option(self, option):
+        self.selected_things.clear()
+        if option == "directory":
+            self.select_pushed_lbl["text"] = "Directory: "
+            self.select_pushed_bttn["command"] = self.select_directory
+        elif option == "file":
+            self.select_pushed_lbl["text"] = "Files: "
+            self.select_pushed_bttn["command"] = self.select_file
 
     def get_last_commit(self, dir_path):
         try:
@@ -340,17 +386,15 @@ class MenuPush():
         except GithubException:
             pass
     
+    # PUSH ALL
     def push_all(self):
         try:
             # Set Destination Repository
             repo = git.Repo(self.repo_destination)
 
             # Add files/directories
-            for file in set(self.selected_files):
-                repo.git.add(file)
-
-            for folder in set(self.selected_dirs):
-                repo.git.add(folder)
+            for thing in self.selected_things:
+                repo.git.add(thing)
 
             # Commit message
             commit = self.commit_entry.get()
@@ -382,6 +426,7 @@ class MenuPush():
 class MenuCreate():
     def __init__(self, display):
         self.display = display
+        self.repo_destination = None
 
         # "Your Repository"
         self.dest_repo_button = tk.Button(
@@ -389,7 +434,7 @@ class MenuCreate():
             text="Click to select destination repository",
             width=60,
             height=2,
-            command=lambda: self.select_dir(0)
+            command=self.select_repository
         )
         self.dest_repo_button.place(
             relx=0.55,
@@ -544,6 +589,17 @@ class MenuCreate():
             rely=0.88,
             anchor="center"
         )
+    
+    def select_repository(self):
+        try:
+            repository = askdirectory(title='Select repository')
+
+            self.repo_destination = repository
+            self.dest_repo_bttn["text"] = f"Current Repo: {repository}"
+
+        # ROZXWIAZAC gdy token
+        except git.exc.InvalidGitRepositoryError:
+            messagebox.showerror(message="The directory is not a valid git repository.")
 
     def create_repository(self):  
         try:
