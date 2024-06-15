@@ -10,8 +10,6 @@ from github import Github
 from github import GithubException
 import git
 
-from credentials import github_token
-
 #statics
 green = "#154529"
 
@@ -102,35 +100,6 @@ class MenuPush():
         self.repo_destination = None
         self.selected_things = set()
 
-        # "To push"
-        self.info_lbl = tk.Label(
-            self.display,
-            text="To push:",
-            width=18,
-            height=2,
-            borderwidth=0,
-            background="green"
-            )
-        self.info_lbl.place(
-            relx=0.13,
-            rely=0.26,
-            anchor="center"
-        )
-
-        # "Your Repository" Button
-        self.dest_repo_bttn = tk.Button(
-            self.display,
-            text="Click to select destination repository",
-            width=60,
-            height=2,
-            command=self.select_repository
-        )
-        self.dest_repo_bttn.place(
-            relx=0.55,
-            rely=0.26,
-            anchor="center"
-        )
-
         # Token
         self.token_label = tk.Label(
             self.display,
@@ -142,16 +111,44 @@ class MenuPush():
         )
         self.token_label.place(
             relx=0.13,
-            rely=0.38,
+            rely=0.26,
             anchor="center"
         )
 
         self.token_entry = tk.Entry(
             self.display,
-            width=65
+            width=72
         )
         self.token_entry.place(
-            relx=0.52,
+            relx=0.55,
+            rely=0.26,
+            anchor="center"
+        )
+
+        # "Your Repository" 
+        self.info_lbl = tk.Label(
+            self.display,
+            text="Your Repository:",
+            width=18,
+            height=2,
+            borderwidth=0,
+            background="green"
+            )
+        self.info_lbl.place(
+            relx=0.13,
+            rely=0.38,
+            anchor="center"
+        )
+
+        self.dest_repo_bttn = tk.Button(
+            self.display,
+            text="Click to select destination repository",
+            width=61,
+            height=2,
+            command=self.select_repository
+        )
+        self.dest_repo_bttn.place(
+            relx=0.55,
             rely=0.38,
             anchor="center"
         )
@@ -217,7 +214,7 @@ class MenuPush():
         # Commit Label
         self.commit_label = tk.Label(
             self.display,
-            text="Commit -m:",
+            text="Commit message:",
             width=18,
             height=2,
             borderwidth=0,
@@ -231,10 +228,10 @@ class MenuPush():
 
         self.commit_entry = tk.Entry(
             self.display,
-            width=65
+            width=72
         )
         self.commit_entry.place(
-            relx=0.52,
+            relx=0.55,
             rely=0.68,
             anchor="center"
         )
@@ -301,16 +298,24 @@ class MenuPush():
 
     # select
     def select_repository(self):
+        # check user token
+        self.user_token = self.token_entry.get()
+        if self.user_token == "":
+            messagebox.showerror(message="You need to enter your user token")
+            return
+        
+        # select repository
         try:
             repository = askdirectory(title='Select repository')
 
+            self.git_repo = git.Repo(repository)
             self.repo_destination = repository
+
             self.dest_repo_bttn["text"] = f"Current Repo: {repository}"
 
             last_commit = self.get_last_commit(repository)
             self.last_commit_lbl["text"] = f"Last Commit: {last_commit}"
 
-        # ROZXWIAZAC gdy token
         except git.exc.InvalidGitRepositoryError:
             messagebox.showerror(message="The directory is not a valid git repository.")
 
@@ -377,7 +382,7 @@ class MenuPush():
 
     def get_last_commit(self, dir_path):
         try:
-            g = Github(github_token)
+            g = Github(self.user_token)
             user = g.get_user()
             repo = path.basename(dir_path)
             repo = user.get_repo(repo)
@@ -389,22 +394,20 @@ class MenuPush():
     # PUSH ALL
     def push_all(self):
         try:
-            # Set Destination Repository
-            repo = git.Repo(self.repo_destination)
-
-            # Add files/directories
+            # Add selected files/directory
             for thing in self.selected_things:
-                repo.git.add(thing)
+                self.git_repo.git.add(thing)
 
             # Commit message
             commit = self.commit_entry.get()
-            repo.git.commit(m=commit)
+            self.git_repo.git.commit(m=commit)
 
             # Push all to User's Github
-            origin = repo.remote(name='origin')
+            origin = self.git_repo.remote(name='origin')
             origin.push()
 
             # Succes Label
+            self.last_commit_lbl.place_forget()
             succes_label = tk.Label(
                 self.display,
                 width=50,
@@ -414,12 +417,9 @@ class MenuPush():
             )
             succes_label.place(
                 relx=0.5,
-                rely=0.75,
+                rely=0.76,
                 anchor="center"
             )
-        
-        except git.exc.InvalidGitRepositoryError:
-            messagebox.showerror(message="The directory is a valid git repository.")
         except git.exc.GitCommandError as e:
             messagebox.showerror(message=f"Error occurred when: {e}")
     
@@ -428,20 +428,32 @@ class MenuCreate():
         self.display = display
         self.repo_destination = None
 
-        # "Your Repository"
-        self.dest_repo_button = tk.Button(
+        # Token
+        self.token_lbl = tk.Label(
             self.display,
-            text="Click to select destination repository",
-            width=60,
+            text="Github Token:",
+            width=18,
             height=2,
-            command=self.select_repository
+            borderwidth=0,
+            background="green"
         )
-        self.dest_repo_button.place(
-            relx=0.55,
+        self.token_lbl.place(
+            relx=0.13,
             rely=0.26,
             anchor="center"
         )
 
+        self.token_entry = tk.Entry(
+            self.display,
+            width=72
+        )
+        self.token_entry.place(
+            relx=0.55,
+            rely=0.26,
+            anchor="center"
+        )
+      
+        # "Your Repository"
         self.info = tk.Label(
             self.display,
             text="Repository place:",
@@ -452,39 +464,27 @@ class MenuCreate():
             )
         self.info.place(
             relx=0.13,
-            rely=0.26,
+            rely=0.38,
             anchor="center"
         )
 
-        # Token
-        self.token_label = tk.Label(
+        self.dest_repo_bttn = tk.Button(
             self.display,
-            text="Github Token:",
-            width=18,
+            text="Click to select destination repository",
+            width=61,
             height=2,
-            borderwidth=0,
-            background="green"
+            command=self.select_repository
         )
-        self.token_label.place(
-            relx=0.13,
+        self.dest_repo_bttn.place(
+            relx=0.55,
             rely=0.38,
             anchor="center"
         )
 
-        self.token_entry = tk.Entry(
-            self.display,
-            width=55
-        )
-        self.token_entry.place(
-            relx=0.5,
-            rely=0.38,
-            anchor="center"
-        )
-      
         # Name
         self.repo_name = tk.Label(
             self.display,
-            text="Repo name",
+            text="Repository name:",
             width=18,
             height=2,
             borderwidth=0,
@@ -498,10 +498,10 @@ class MenuCreate():
 
         self.repo_name_entry = tk.Entry(
             self.display,
-            width=55
+            width=72
         )
         self.repo_name_entry.place(
-            relx=0.5,
+            relx=0.55,
             rely=0.5,
             anchor="center"
         )
@@ -521,16 +521,17 @@ class MenuCreate():
             anchor="center"
         )
 
-        self.repo_description_entry = tk.Entry(
+        self.repo_description_entry = tk.Text(
             self.display,
-            width=55
+            width=54,
+            height=2
         )
         self.repo_description_entry.place(
-            relx=0.5,
+            relx=0.55,
             rely=0.62,
             anchor="center"
         )
-
+        
         # Status
         self.private_status = tk.BooleanVar()
         self.repo_status = tk.Label(
@@ -576,7 +577,7 @@ class MenuCreate():
         )
 
         # "Create" Button
-        self.create_repo_button = tk.Button(
+        self.create_repo_bttn = tk.Button(
             self.display,
             text="Create",
             width=30,
@@ -584,38 +585,40 @@ class MenuCreate():
             borderwidth=0,
             command=self.create_repository
         )
-        self.create_repo_button.place(
+        self.create_repo_bttn.place(
             relx=0.5,
             rely=0.88,
             anchor="center"
         )
     
     def select_repository(self):
+        # check github token
+        self.user_token = self.token_entry.get()
+        if self.user_token == "":
+            messagebox.showerror(message="You need to enter your user token")
+            return
+
+        # select repository
         try:
             repository = askdirectory(title='Select repository')
 
+            self.git_repo = git.Repo.init(repository)
             self.repo_destination = repository
             self.dest_repo_bttn["text"] = f"Current Repo: {repository}"
 
-        # ROZXWIAZAC gdy token
         except git.exc.InvalidGitRepositoryError:
             messagebox.showerror(message="The directory is not a valid git repository.")
+        except git.exc.GitCommandError as e:
+            messagebox.showerror(message=f"Error occurred when: {e}")
 
     def create_repository(self):  
         try:
-            # Get Github User
-            #github_token = self.token_entry.get()
-            #github_username = self.username_entry.get()
-
             repo_name = self.repo_name_entry.get()
             repo_description = self.repo_description_entry.get()
-            status = self.private_status.get()
+            repo_status = self.private_status.get()
         
-            # initialize in git
-            repo = git.Repo.init(self.destination_repo)
-
             # create in Github
-            g = Github(github_token)
+            g = Github(self.user_token)
             user = g.get_user()
             user.create_repo(
                 repo_name,
@@ -625,14 +628,14 @@ class MenuCreate():
                 has_issues=True,
                 has_projects=False,
                 has_wiki=False,
-                private=status,
+                private=repo_status,
             )
 
-            url = f"https://github.com/KarolO77/{repo_name}.git"
-            repo.git.commit(m="Initial commit")
-            repo.git.branch('-M', 'main')
-            repo.create_remote("origin", url)
-            origin = repo.remote(name="origin")
+            url = f"https://github.com/{user.login}/{repo_name}.git"
+            self.git_repo.git.commit(m="Initial commit")
+            self.git_repo.git.branch('-M', 'main')
+            self.git_repo.create_remote("origin", url)
+            origin = self.git_repo.remote(name="origin")
             origin.push()
 
         except git.exc.GitCommandError as e:
