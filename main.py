@@ -2,16 +2,16 @@
 from tkinter.filedialog import askdirectory, askopenfilename
 from tkinter import messagebox
 import tkinter as tk
-from tkinter import ttk
 
+import webbrowser
 from os import path
-import git.exc
 from github import Github
 from github import GithubException
 import git
 
 #statics
 green = "#154529"
+
 
 class App():
     def __init__(self):
@@ -70,15 +70,6 @@ class App():
             self.button["relief"] = "raised"
             self.button2["relief"] = "sunken"
     
-    """ def reset_menu_data(self, menu):
-        if menu and menu == self.menu_push:
-            menu.destination_repo = None
-            menu.selected_files.clear()
-            menu.selected_dirs.clear()
-            menu.commit_message = ""
-        elif menu and menu == self.menu_create:
-            menu.destination_repo = None """
-
     def clear_menu_widgets(self, menu):
         if menu == None:
             return
@@ -91,6 +82,7 @@ class App():
     
     def run(self):
         self.display.mainloop()
+
 
 class MenuPush():
     def __init__(self, display):
@@ -117,14 +109,28 @@ class MenuPush():
 
         self.token_entry = tk.Entry(
             self.display,
-            width=72
+            width=59
         )
         self.token_entry.place(
-            relx=0.55,
+            relx=0.496,
             rely=0.26,
             anchor="center"
         )
+        self.set_token()
 
+        self.token_save_bttn = tk.Button(
+            self.display,
+            text="Save",
+            width=8,
+            height=2,
+            command=self.save_token
+        )
+        self.token_save_bttn.place(
+            relx=0.816,
+            rely=0.26,
+            anchor="center"
+        )
+        
         # "Your Repository" 
         self.info_lbl = tk.Label(
             self.display,
@@ -307,6 +313,9 @@ class MenuPush():
         # select repository
         try:
             repository = askdirectory(title='Select repository')
+            if repository == "":
+                messagebox.showwarning(message="No repository has been selected")
+                return  
 
             self.git_repo = git.Repo(repository)
             self.repo_destination = repository
@@ -327,7 +336,7 @@ class MenuPush():
         # select directory
         directory = askdirectory(title='Select directory')
         if directory == "":
-            messagebox.showerror(message="No directory has been selected")
+            messagebox.showwarning(message="No directory has been selected")
             return     
         elif self.repo_destination not in directory:
             messagebox.showerror(message="Directory not found in repository")
@@ -345,7 +354,7 @@ class MenuPush():
         # add file
         file = askopenfilename(title='Add file')
         if file == "":
-            messagebox.showerror(message="No file has been selected")
+            messagebox.showwarning(message="No file has been selected")
             return
         elif self.repo_destination not in file:
             messagebox.showerror(message="File not found in repository")
@@ -370,6 +379,23 @@ class MenuPush():
         else:
             self.set_push_option("directory")
     
+    # token
+    def set_token(self):
+        with open("credentials.txt", 'r') as file:
+            content = file.read()
+            if content:
+                self.token_entry.delete(0,tk.END)
+                self.token_entry.insert(0,content)
+
+    def save_token(self):
+        token = self.token_entry.get()
+        if token == "":
+            messagebox.showwarning(message="Token is empty")
+            return
+        
+        with open("credentials.txt", "w") as file:
+            file.write(token)
+
     # funcs
     def set_push_option(self, option):
         self.selected_things.clear()
@@ -382,8 +408,8 @@ class MenuPush():
 
     def get_last_commit(self, dir_path):
         try:
-            g = Github(self.user_token)
-            user = g.get_user()
+            self.g = Github(self.user_token)
+            user = self.g.get_user()
             repo = path.basename(dir_path)
             repo = user.get_repo(repo)
             commits = repo.get_commits()
@@ -408,21 +434,34 @@ class MenuPush():
 
             # Succes Label
             self.last_commit_lbl.place_forget()
-            succes_label = tk.Label(
+            """ succes_label = tk.Label(
                 self.display,
                 width=50,
                 height=2,
                 text="Successfuly pushed to Your Github repository",
                 background="green"
+            ) """
+            user = self.g.get_user()
+            repo = path.basename(self.repo_destination)
+            url = f"https://github.com/{user}/{repo}"
+            succes_label = tk.Button(
+                self.display,
+                width=50,
+                height=2,
+                text=url,
+                background="green",
+                command=lambda: webbrowser.open_new(url)
             )
             succes_label.place(
                 relx=0.5,
                 rely=0.76,
                 anchor="center"
             )
+        
         except git.exc.GitCommandError as e:
             messagebox.showerror(message=f"Error occurred when: {e}")
     
+
 class MenuCreate():
     def __init__(self, display):
         self.display = display
@@ -445,14 +484,28 @@ class MenuCreate():
 
         self.token_entry = tk.Entry(
             self.display,
-            width=72
+            width=59
         )
         self.token_entry.place(
-            relx=0.55,
+            relx=0.496,
             rely=0.26,
             anchor="center"
         )
-      
+        self.set_token()
+
+        self.token_save_bttn = tk.Button(
+            self.display,
+            text="Save",
+            width=8,
+            height=2,
+            command=self.save_token
+        )
+        self.token_save_bttn.place(
+            relx=0.816,
+            rely=0.26,
+            anchor="center"
+        )
+          
         # "Your Repository"
         self.info = tk.Label(
             self.display,
@@ -591,6 +644,24 @@ class MenuCreate():
             anchor="center"
         )
     
+    # token
+    def set_token(self):
+        with open("credentials.txt", 'r') as file:
+            content = file.read()
+            if content:
+                self.token_entry.delete(0,tk.END)
+                self.token_entry.insert(0,content)
+
+    def save_token(self):
+        token = self.token_entry.get()
+        if token == "":
+            messagebox.showwarning(message="Token is empty")
+            return
+        
+        with open("credentials.txt", "a+") as file:
+            file.write(token)
+
+    # repository
     def select_repository(self):
         # check github token
         self.user_token = self.token_entry.get()
@@ -601,6 +672,9 @@ class MenuCreate():
         # select repository
         try:
             repository = askdirectory(title='Select repository')
+            if repository == "":
+                messagebox.showwarning(message="No repository has been selected")
+                return  
 
             self.git_repo = git.Repo.init(repository)
             self.repo_destination = repository
