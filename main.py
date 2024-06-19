@@ -26,7 +26,7 @@ class App():
         self.menu_push = None
 
         # Buttons
-        self.button = tk.Button(
+        self.new_repo_choice_bttn = tk.Button(
             self.display,
             text="CreateNewRepo",
             width=16, 
@@ -35,13 +35,13 @@ class App():
             relief="raised",
             command= lambda: self.repo_buttons_clicked(0)
             )
-        self.button.place(
+        self.new_repo_choice_bttn.place(
             relx=0.4,
             rely=0.1,
             anchor="center"
         )
 
-        self.button2 = tk.Button(
+        self.push_repo_choice_bttn = tk.Button(
             self.display,
             text="PushToRepo",
             width=16, 
@@ -50,7 +50,7 @@ class App():
             relief="raised",
             command= lambda: self.repo_buttons_clicked(1)
             )
-        self.button2.place(
+        self.push_repo_choice_bttn.place(
             relx=0.6,
             rely=0.1,
             anchor="center"
@@ -58,17 +58,17 @@ class App():
 
     def repo_buttons_clicked(self, bttn):
 
-        if self.button["relief"] == "raised" and not bttn:
+        if self.new_repo_choice_bttn["relief"] == "raised" and not bttn:
             self.menu_create = MenuCreate(self.display)
             self.clear_menu_widgets(self.menu_push)
-            self.button["relief"] = "sunken"
-            self.button2["relief"] = "raised"
+            self.new_repo_choice_bttn["relief"] = "sunken"
+            self.push_repo_choice_bttn["relief"] = "raised"
 
-        elif self.button2["relief"] == "raised" and bttn:
+        elif self.push_repo_choice_bttn["relief"] == "raised" and bttn:
             self.menu_push = MenuPush(self.display)
             self.clear_menu_widgets(self.menu_create)
-            self.button["relief"] = "raised"
-            self.button2["relief"] = "sunken"
+            self.new_repo_choice_bttn["relief"] = "raised"
+            self.push_repo_choice_bttn["relief"] = "sunken"
     
     def clear_menu_widgets(self, menu):
         if menu == None:
@@ -304,10 +304,8 @@ class MenuPush():
 
     # select
     def select_repository(self):
-        # check user token
-        self.user_token = self.token_entry.get()
-        if self.user_token == "":
-            messagebox.showerror(message="You need to enter your user token")
+        # check user token and login
+        if not self.login_by_token():
             return
         
         # select repository
@@ -315,18 +313,19 @@ class MenuPush():
             repository = askdirectory(title='Select repository')
             if repository == "":
                 messagebox.showwarning(message="No repository has been selected")
-                return  
+                return
 
             self.git_repo = git.Repo(repository)
             self.repo_destination = repository
-
             self.dest_repo_bttn["text"] = f"Current Repo: {repository}"
 
-            last_commit = self.get_last_commit(repository)
+            last_commit = self.get_last_commit()
             self.last_commit_lbl["text"] = f"Last Commit: {last_commit}"
 
         except git.exc.InvalidGitRepositoryError:
             messagebox.showerror(message="The directory is not a valid git repository.")
+        except git.exc.GitCommandError as e:
+            messagebox.showerror(message=f"Error occurred when: {e}")
 
     def select_directory(self):
         if self.repo_destination == None:
@@ -396,6 +395,21 @@ class MenuPush():
         with open("credentials.txt", "w") as file:
             file.write(token)
 
+    def login_by_token(self):
+        self.user_token = self.token_entry.get()
+        if self.user_token == "":
+            messagebox.showerror(message="You need to enter your user token")
+            return False
+
+        try:
+            self.g = Github(self.user_token)
+            self.g_user = self.g.get_user()
+        except GithubException as e:
+            messagebox.showerror(message=f"Error occurred when: {e}")
+            return False
+        
+        return True
+
     # funcs
     def set_push_option(self, option):
         self.selected_things.clear()
@@ -406,16 +420,14 @@ class MenuPush():
             self.select_pushed_lbl["text"] = "Files: "
             self.select_pushed_bttn["command"] = self.select_file
 
-    def get_last_commit(self, dir_path):
+    def get_last_commit(self):
         try:
-            self.g = Github(self.user_token)
-            user = self.g.get_user()
-            repo = path.basename(dir_path)
-            repo = user.get_repo(repo)
+            repo = path.basename(self.repo_destination)
+            repo = self.g_user.get_repo(repo)
             commits = repo.get_commits()
             return commits[0].commit.message
         except GithubException:
-            pass
+            return ""
     
     # PUSH ALL
     def push_all(self):
@@ -432,19 +444,13 @@ class MenuPush():
             origin = self.git_repo.remote(name='origin')
             origin.push()
 
-            # Succes Label
+            # Link Label
             self.last_commit_lbl.place_forget()
-            """ succes_label = tk.Label(
-                self.display,
-                width=50,
-                height=2,
-                text="Successfuly pushed to Your Github repository",
-                background="green"
-            ) """
-            user = self.g.get_user()
+            user = self.g_user.login
             repo = path.basename(self.repo_destination)
             url = f"https://github.com/{user}/{repo}"
-            succes_label = tk.Button(
+
+            link_label = tk.Button(
                 self.display,
                 width=50,
                 height=2,
@@ -452,7 +458,7 @@ class MenuPush():
                 background="green",
                 command=lambda: webbrowser.open_new(url)
             )
-            succes_label.place(
+            link_label.place(
                 relx=0.5,
                 rely=0.76,
                 anchor="center"
