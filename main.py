@@ -340,6 +340,8 @@ class MenuPush():
         elif self.repo_destination not in directory:
             messagebox.showerror(message="Directory not found in repository")
             return
+        elif directory in self.selected_things:
+            return
         
         directory = path.basename(directory)
         self.selected_things.add(directory)
@@ -357,6 +359,8 @@ class MenuPush():
             return
         elif self.repo_destination not in file:
             messagebox.showerror(message="File not found in repository")
+            return
+        elif file in self.selected_things:
             return
 
         file = path.basename(file)
@@ -413,10 +417,10 @@ class MenuPush():
     # funcs
     def set_push_option(self, option):
         self.selected_things.clear()
-        if option == "directory":
+        if option == "directory": # False var
             self.select_pushed_lbl["text"] = "Directory: "
             self.select_pushed_bttn["command"] = self.select_directory
-        elif option == "file":
+        elif option == "file": # True var
             self.select_pushed_lbl["text"] = "Files: "
             self.select_pushed_bttn["command"] = self.select_file
 
@@ -430,11 +434,25 @@ class MenuPush():
             return ""
     
     # PUSH ALL
+    def add_all(self):
+        if not self.push_option_var:
+            # add directories/whole directory
+            if list(self.selected_things)[0] == path.basename(self.repo_destination):
+                self.git_repo.git.add(".")
+            else:
+                for thing in self.selected_things:
+                    self.git_repo.git.add(f"{thing}/")
+        else:
+            # add files
+            for thing in self.selected_things:
+                self.git_repo.git.add(thing)
+
+
+
     def push_all(self):
         try:
             # Add selected files/directory
-            for thing in self.selected_things:
-                self.git_repo.git.add(thing)
+            self.add_all()
 
             # Commit message
             commit = self.commit_entry.get()
@@ -450,7 +468,7 @@ class MenuPush():
             repo = path.basename(self.repo_destination)
             url = f"https://github.com/{user}/{repo}"
 
-            link_label = tk.Button(
+            self.link_label = tk.Button(
                 self.display,
                 width=50,
                 height=2,
@@ -458,7 +476,7 @@ class MenuPush():
                 background="green",
                 command=lambda: webbrowser.open_new(url)
             )
-            link_label.place(
+            self.link_label.place(
                 relx=0.5,
                 rely=0.76,
                 anchor="center"
