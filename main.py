@@ -161,13 +161,14 @@ class MenuPush():
 
         # Options to push
         self.push_option_var = tk.BooleanVar()
+        self.push_lbl_dir_text = "Direcotry: "
         self.directory_option_bttn = tk.Radiobutton(
             self.display, 
             width=12,
             height=1,
             value=False, # 0
             variable=self.push_option_var,
-            text="Directory",
+            text=self.push_lbl_dir_text,
             command=lambda: self.set_push_option("directory")
         )
         self.directory_option_bttn.place(
@@ -176,13 +177,14 @@ class MenuPush():
             anchor="center"
         )
 
+        self.push_lbl_file_text = "Files: "
         self.file_option_bttn = tk.Radiobutton(
             self.display, 
             width=12,
             height=1,
             value=True, # 1
             variable=self.push_option_var,
-            text="Files",
+            text=self.push_lbl_file_text,
             command=lambda: self.set_push_option("file")
         )
         self.file_option_bttn.place(
@@ -312,7 +314,6 @@ class MenuPush():
         try:
             repository = askdirectory(title='Select repository')
             if repository == "":
-                messagebox.showwarning(message="No repository has been selected")
                 return
 
             self.git_repo = git.Repo(repository)
@@ -335,7 +336,6 @@ class MenuPush():
         # select directory
         directory = askdirectory(title='Select directory')
         if directory == "":
-            messagebox.showwarning(message="No directory has been selected")
             return     
         elif self.repo_destination not in directory:
             messagebox.showerror(message="Directory not found in repository")
@@ -344,8 +344,10 @@ class MenuPush():
             return
         
         directory = path.basename(directory)
-        self.selected_things.add(directory)
-        self.select_pushed_lbl["text"] += directory
+        if directory not in self.selected_things:
+            self.selected_things.add(directory)
+            self.select_pushed_lbl["text"] += f"{directory}, "
+            self.push_lbl_dir_text = self.select_pushed_lbl["text"]
 
     def select_file(self):
         if self.repo_destination == None:
@@ -355,7 +357,6 @@ class MenuPush():
         # add file
         file = askopenfilename(title='Add file')
         if file == "":
-            messagebox.showwarning(message="No file has been selected")
             return
         elif self.repo_destination not in file:
             messagebox.showerror(message="File not found in repository")
@@ -364,8 +365,10 @@ class MenuPush():
             return
 
         file = path.basename(file)
-        self.selected_things.add(file)
-        self.select_pushed_lbl["text"] += f"{file}, "
+        if file not in self.selected_things:
+            self.selected_things.add(file)
+            self.select_pushed_lbl["text"] += f"{file}, "
+            self.push_lbl_file_text = self.select_pushed_lbl["text"]
     
     # remove
     def remove_last_added(self):
@@ -416,12 +419,11 @@ class MenuPush():
 
     # funcs
     def set_push_option(self, option):
-        self.selected_things.clear()
         if option == "directory": # False var
-            self.select_pushed_lbl["text"] = "Directory: "
+            self.select_pushed_lbl["text"] = self.push_lbl_dir_text
             self.select_pushed_bttn["command"] = self.select_directory
         elif option == "file": # True var
-            self.select_pushed_lbl["text"] = "Files: "
+            self.select_pushed_lbl["text"] = self.push_lbl_file_text
             self.select_pushed_bttn["command"] = self.select_file
 
     def get_last_commit(self):
@@ -446,8 +448,6 @@ class MenuPush():
             # add files
             for thing in self.selected_things:
                 self.git_repo.git.add(thing)
-
-
 
     def push_all(self):
         try:
