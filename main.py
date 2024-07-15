@@ -712,7 +712,7 @@ class MenuCreate():
     def create_repository(self):  
         try:
             repo_name = self.repo_name_entry.get()
-            repo_description = self.repo_description_entry.get()
+            repo_description = self.repo_description_entry.get(1.0, tk.END)
             repo_status = self.private_status.get()
         
             # create in Github
@@ -730,8 +730,8 @@ class MenuCreate():
             )
 
             url = f"https://github.com/{user.login}/{repo_name}.git"
-            self.git_repo.git.commit(m="Initial commit")
             self.git_repo.git.branch('-M', 'main')
+            self.git_repo.git.commit(m="Initial commit")
             self.git_repo.create_remote("origin", url)
             origin = self.git_repo.remote(name="origin")
             origin.push()
