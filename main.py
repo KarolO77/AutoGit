@@ -4,7 +4,7 @@ from tkinter import messagebox
 import tkinter as tk
 
 import webbrowser
-from os import path
+from os import path, listdir
 from github import Github
 from github import GithubException
 import git
@@ -375,15 +375,20 @@ class MenuPush():
         last_thing = self.select_pushed_lbl["text"].split(",")[-2][1:]
         d = len(self.select_pushed_lbl["text"]) - len(last_thing) - 3
         self.select_pushed_lbl["text"] = self.select_pushed_lbl["text"][:d]
+        self.push_lbl_dir_text["text"] = self.select_pushed_lbl["text"]
         self.selected_things.remove(last_thing)
 
     def remove_all_added(self):
         self.selected_things.clear()
+        self.push_lbl_dir_text["text"] = "Directory: "
+        self.push_lbl_file_text["text"] = "Files: "
 
         if self.push_option_var.get():
             self.set_push_option("file")
+            self.select_pushed_lbl["text"] = "Files: "
         else:
             self.set_push_option("directory")
+            self.select_pushed_lbl["text"] = "Directory: "
     
     # token
     def set_token(self):
@@ -437,11 +442,11 @@ class MenuPush():
     
     # PUSH ALL
     def add_all(self):
-        if not self.push_option_var:
+        if not self.push_option_var.get():
             # add directories/whole directory
-            if list(self.selected_things)[0] == path.basename(self.repo_destination):
+            if len(self.selected_things) == 1:
                 self.git_repo.git.add(".")
-            else:
+            elif len(self.selected_things) > 1:
                 for thing in self.selected_things:
                     self.git_repo.git.add(f"{thing}/")
         else:
@@ -715,7 +720,7 @@ class MenuCreate():
             repo_description = self.repo_description_entry.get(1.0, tk.END)
             repo_status = self.private_status.get()
         
-            # create in Github
+            # create repo in Github
             g = Github(self.user_token)
             user = g.get_user()
             user.create_repo(
@@ -731,8 +736,16 @@ class MenuCreate():
 
             url = f"https://github.com/{user.login}/{repo_name}.git"
             self.git_repo.git.branch('-M', 'main')
-            self.git_repo.git.commit(m="Initial commit")
             self.git_repo.create_remote("origin", url)
+            
+            # create README, do commit, and push to Github
+            rpath = self.repo_destination + "/README.md"
+            with open(rpath, "w") as f:
+                f.write("NEW README")
+
+            self.git_repo.git.add("README.md")
+            self.git_repo.git.commit(m="Initial commit")
+
             origin = self.git_repo.remote(name="origin")
             origin.push()
 
